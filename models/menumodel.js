@@ -5,7 +5,7 @@ const menuSchema = new mongoose.Schema({
     price: {type: Number, required: true},
     category: {type: String, required: true}, // e.g. Biryani, Fast Food, Indian, Chinese, Dessert, Beverages, Snacks
     description: {type: String},
-    imageUrl: {type: String, required: true},
+    imageUrl: {type: String},
     available: {type: Boolean, default: true}
 }, { timestamps: true });
 

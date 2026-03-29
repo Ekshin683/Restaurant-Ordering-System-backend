@@ -5,21 +5,29 @@ export const createMenuItem = async (req, res) => {
     try {
         const { name, price, category, description, imageUrl, available } = req.body;
 
-        // Validation
-        if (!name || !price || !category || !imageUrl) {
+        // Validation - make imageUrl optional with default value
+        if (!name || !price || !category) {
             return res.status(400).json({ 
                 success: false, 
-                message: "Name, price, category, and imageUrl are required" 
+                message: "Name, price, and category are required fields" 
+            });
+        }
+
+        // Validate price is a number
+        if (isNaN(price) || Number(price) <= 0) {
+            return res.status(400).json({ 
+                success: false, 
+                message: "Price must be a valid positive number" 
             });
         }
 
         const newMenuItem = new menuModel({
-            name,
-            price,
-            category,
-            description,
-            imageUrl,
-            available
+            name: name.trim(),
+            price: Number(price),
+            category: category.trim(),
+            description: description ? description.trim() : '',
+            imageUrl: imageUrl ? imageUrl.trim() : 'https://via.placeholder.com/300x200?text=No+Image',
+            available: available !== false // Default to true if not specified
         });
 
         await newMenuItem.save();
@@ -30,9 +38,10 @@ export const createMenuItem = async (req, res) => {
             menuItem: newMenuItem 
         });
     } catch (error) {
+        console.error('Create menu item error:', error);
         res.status(500).json({ 
             success: false, 
-            message: "Server error", 
+            message: "Failed to create menu item", 
             error: error.message 
         });
     }
@@ -75,9 +84,10 @@ export const getAllMenuItems = async (req, res) => {
             menuItems 
         });
     } catch (error) {
+        console.error('Get all menu items error:', error);
         res.status(500).json({ 
             success: false, 
-            message: "Server error", 
+            message: "Failed to fetch menu items", 
             error: error.message 
         });
     }
@@ -102,9 +112,10 @@ export const getMenuItemById = async (req, res) => {
             menuItem 
         });
     } catch (error) {
+        console.error('Get menu item by ID error:', error);
         res.status(500).json({ 
             success: false, 
-            message: "Server error", 
+            message: "Failed to fetch menu item", 
             error: error.message 
         });
     }
@@ -116,9 +127,45 @@ export const updateMenuItem = async (req, res) => {
         const { id } = req.params;
         const { name, price, category, description, imageUrl, available } = req.body;
 
+        // Build update object with only provided fields
+        const updateData = {};
+        
+        if (name !== undefined) {
+            if (!name.trim()) {
+                return res.status(400).json({ success: false, message: "Name cannot be empty" });
+            }
+            updateData.name = name.trim();
+        }
+        
+        if (price !== undefined) {
+            if (isNaN(price) || Number(price) <= 0) {
+                return res.status(400).json({ success: false, message: "Price must be a valid positive number" });
+            }
+            updateData.price = Number(price);
+        }
+        
+        if (category !== undefined) {
+            if (!category.trim()) {
+                return res.status(400).json({ success: false, message: "Category cannot be empty" });
+            }
+            updateData.category = category.trim();
+        }
+        
+        if (description !== undefined) {
+            updateData.description = description ? description.trim() : '';
+        }
+        
+        if (imageUrl !== undefined) {
+            updateData.imageUrl = imageUrl ? imageUrl.trim() : 'https://via.placeholder.com/300x200?text=No+Image';
+        }
+        
+        if (available !== undefined) {
+            updateData.available = Boolean(available);
+        }
+
         const updatedMenuItem = await menuModel.findByIdAndUpdate(
             id,
-            { name, price, category, description, imageUrl, available },
+            updateData,
             { new: true, runValidators: true }
         );
 
@@ -135,9 +182,10 @@ export const updateMenuItem = async (req, res) => {
             menuItem: updatedMenuItem 
         });
     } catch (error) {
+        console.error('Update menu item error:', error);
         res.status(500).json({ 
             success: false, 
-            message: "Server error", 
+            message: "Failed to update menu item", 
             error: error.message 
         });
     }
@@ -159,12 +207,14 @@ export const deleteMenuItem = async (req, res) => {
 
         res.status(200).json({ 
             success: true, 
-            message: "Menu item deleted successfully" 
+            message: "Menu item deleted successfully",
+            menuItem: deletedMenuItem
         });
     } catch (error) {
+        console.error('Delete menu item error:', error);
         res.status(500).json({ 
             success: false, 
-            message: "Server error", 
+            message: "Failed to delete menu item", 
             error: error.message 
         });
     }
@@ -180,9 +230,10 @@ export const getCategories = async (req, res) => {
             categories 
         });
     } catch (error) {
+        console.error('Get categories error:', error);
         res.status(500).json({ 
             success: false, 
-            message: "Server error", 
+            message: "Failed to fetch categories", 
             error: error.message 
         });
     }
