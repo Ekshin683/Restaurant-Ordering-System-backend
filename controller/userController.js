@@ -5,7 +5,7 @@ import userModel from '../models/usermodel.js';
 // Register new user
 export const register = async (req, res) => {
     try {
-        const { name, email, password, role, address } = req.body;
+        const { name, email, password, role, address, phone } = req.body;
 
         // Validation
         if (!name || !email || !password) {
@@ -32,6 +32,7 @@ export const register = async (req, res) => {
             name,
             email,
             password: hashedPassword,
+            phone: phone || '',
             address: address || '',
             role: role || "user"
         });
@@ -45,6 +46,7 @@ export const register = async (req, res) => {
                 id: newUser._id,
                 name: newUser.name,
                 email: newUser.email,
+                phone: newUser.phone,
                 address: newUser.address,
                 role: newUser.role
             }
@@ -104,6 +106,7 @@ export const login = async (req, res) => {
                 id: user._id,
                 name: user.name,
                 email: user.email,
+                phone: user.phone,
                 address: user.address,
                 role: user.role
             }
@@ -145,11 +148,12 @@ export const getProfile = async (req, res) => {
 // Update user profile
 export const updateProfile = async (req, res) => {
     try {
-        const { name, email, address } = req.body;
+        const { name, email, phone, address } = req.body;
 
         const updateData = {};
         if (typeof name === 'string') updateData.name = name;
         if (typeof email === 'string') updateData.email = email;
+        if (typeof phone === 'string') updateData.phone = phone;
         if (typeof address === 'string') updateData.address = address;
         
         const updatedUser = await userModel.findByIdAndUpdate(
