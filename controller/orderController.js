@@ -43,7 +43,7 @@ export const createOrder = async (req, res) => {
 
         const populatedOrder = await orderModel.findById(newOrder._id)
             .populate('userId', 'name email')
-            .populate('items.menuId', 'name price category');
+            .populate('items.menuId', 'name price category imageUrl');
 
         res.status(201).json({ 
             success: true, 
@@ -77,7 +77,7 @@ export const getAllOrders = async (req, res) => {
 
         const orders = await orderModel.find(query)
             .populate('userId', 'name email')
-            .populate('items.menuId', 'name price category')
+            .populate('items.menuId', 'name price category imageUrl')
             .sort({ createdAt: -1 });
 
         res.status(200).json({ 
@@ -101,7 +101,7 @@ export const getOrderById = async (req, res) => {
         
         const order = await orderModel.findById(id)
             .populate('userId', 'name email')
-            .populate('items.menuId', 'name price category');
+            .populate('items.menuId', 'name price category imageUrl');
 
         if (!order) {
             return res.status(404).json({ 
@@ -149,7 +149,7 @@ export const updateOrderStatus = async (req, res) => {
             { status },
             { new: true }
         ).populate('userId', 'name email')
-         .populate('items.menuId', 'name price category');
+         .populate('items.menuId', 'name price category imageUrl');
 
         if (!updatedOrder) {
             return res.status(404).json({ 
@@ -168,6 +168,93 @@ export const updateOrderStatus = async (req, res) => {
             success: false, 
             message: "Server error", 
             error: error.message 
+        });
+    }
+};
+
+// Submit review for a completed order
+export const submitOrderReview = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { reviewRating, reviewText, reviewImage } = req.body;
+
+        const rating = Number(reviewRating);
+        if (!Number.isInteger(rating) || rating < 1 || rating > 5) {
+            return res.status(400).json({
+                success: false,
+                message: "Review rating must be an integer from 1 to 5"
+            });
+        }
+
+        const order = await orderModel.findById(id);
+
+        if (!order) {
+            return res.status(404).json({
+                success: false,
+                message: "Order not found"
+            });
+        }
+
+        if (req.user.role !== "admin" && order.userId.toString() !== req.user.id) {
+            return res.status(403).json({
+                success: false,
+                message: "Access denied"
+            });
+        }
+
+        if (order.status !== "completed") {
+            return res.status(400).json({
+                success: false,
+                message: "You can only review completed orders"
+            });
+        }
+
+        order.reviewRating = rating;
+        order.reviewText = (reviewText || '').trim();
+        order.reviewImage = reviewImage || '';
+        order.reviewedAt = new Date();
+
+        await order.save();
+
+        const reviewedOrder = await orderModel.findById(order._id)
+            .populate('userId', 'name email')
+            .populate('items.menuId', 'name price category');
+
+        res.status(200).json({
+            success: true,
+            message: "Review submitted successfully",
+            order: reviewedOrder
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: "Server error",
+            error: error.message
+        });
+    }
+};
+
+// Public reviews for homepage
+export const getPublicReviews = async (req, res) => {
+    try {
+        const reviews = await orderModel.find({
+            status: 'completed',
+            reviewRating: { $exists: true, $ne: null }
+        })
+            .populate('userId', 'name')
+            .sort({ reviewedAt: -1, updatedAt: -1 })
+            .limit(6);
+
+        res.status(200).json({
+            success: true,
+            count: reviews.length,
+            reviews
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: "Server error",
+            error: error.message
         });
     }
 };
@@ -203,7 +290,7 @@ export const deleteOrder = async (req, res) => {
 export const getUserOrders = async (req, res) => {
     try {
         const orders = await orderModel.find({ userId: req.user.id })
-            .populate('items.menuId', 'name price category')
+            .populate('items.menuId', 'name price category imageUrl')
             .sort({ createdAt: -1 });
 
         res.status(200).json({ 

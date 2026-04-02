@@ -7,7 +7,11 @@ const orderSchema = new mongoose.Schema({
         quantity: {type: Number, required: true}
     }],
     totalPrice: {type: Number, required: true},
-    status: {type: String, enum: ["pending", "completed", "cancelled"], default: "pending"}
+    status: {type: String, enum: ["pending", "completed", "cancelled"], default: "pending"},
+    reviewRating: {type: Number, min: 1, max: 5},
+    reviewText: {type: String, trim: true},
+    reviewImage: {type: String, trim: true},
+    reviewedAt: {type: Date}
 }, { timestamps: true });
 
 const orderModel = mongoose.model("orders", orderSchema);
