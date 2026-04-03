@@ -1,11 +1,14 @@
 import nodemailer from 'nodemailer';
 
-const requiredSmtpKeys = ['SMTP_HOST', 'SMTP_PORT', 'SMTP_USER', 'SMTP_PASS', 'EMAIL_FROM', 'FRONTEND_URL'];
+const requiredSmtpKeys = ['SMTP_HOST', 'SMTP_PORT', 'SMTP_USER', 'SMTP_PASS'];
 
 const assertSmtpConfig = () => {
   const missing = requiredSmtpKeys.filter((key) => !process.env[key]);
   if (missing.length > 0) {
-    throw new Error(`Email service is not configured. Missing env vars: ${missing.join(', ')}`);
+    throw new Error(
+      `Email service is not configured. Missing env vars: ${missing.join(', ')}. ` +
+      'Set SMTP_USER to your sender email and SMTP_PASS to an app password.'
+    );
   }
 };
 
@@ -26,7 +29,7 @@ const createTransporter = () => {
 export const sendPasswordResetEmail = async ({ to, name, resetUrl }) => {
   const transporter = createTransporter();
   await transporter.verify();
-  const fromAddress = process.env.EMAIL_FROM;
+  const fromAddress = process.env.EMAIL_FROM || process.env.SMTP_USER;
 
   const info = await transporter.sendMail({
     from: fromAddress,

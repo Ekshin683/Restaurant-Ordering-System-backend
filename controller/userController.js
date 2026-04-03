@@ -8,9 +8,10 @@ import { sendPasswordResetEmail } from '../utils/emailService.js';
 export const register = async (req, res) => {
     try {
         const { name, email, password, role, address, phone } = req.body;
+        const normalizedEmail = typeof email === 'string' ? email.trim().toLowerCase() : '';
 
         // Validation
-        if (!name || !email || !password) {
+        if (!name || !normalizedEmail || !password) {
             return res.status(400).json({ 
                 success: false, 
                 message: "All fields are required" 
@@ -18,7 +19,7 @@ export const register = async (req, res) => {
         }
 
         // Check if user already exists
-        const existingUser = await userModel.findOne({ email });
+        const existingUser = await userModel.findOne({ email: normalizedEmail });
         if (existingUser) {
             return res.status(400).json({ 
                 success: false, 
@@ -32,7 +33,7 @@ export const register = async (req, res) => {
         // Create new user
         const newUser = new userModel({
             name,
-            email,
+            email: normalizedEmail,
             password: hashedPassword,
             phone: phone || '',
             address: address || '',
@@ -66,9 +67,10 @@ export const register = async (req, res) => {
 export const login = async (req, res) => {
     try {
         const { email, password } = req.body;
+        const normalizedEmail = typeof email === 'string' ? email.trim().toLowerCase() : '';
 
         // Validation
-        if (!email || !password) {
+        if (!normalizedEmail || !password) {
             return res.status(400).json({ 
                 success: false, 
                 message: "Email and password are required" 
@@ -76,7 +78,7 @@ export const login = async (req, res) => {
         }
 
         // Find user
-        const user = await userModel.findOne({ email });
+        const user = await userModel.findOne({ email: normalizedEmail });
         if (!user) {
             return res.status(404).json({ 
                 success: false, 
@@ -182,15 +184,16 @@ export const updateProfile = async (req, res) => {
 export const forgotPassword = async (req, res) => {
     try {
         const { email } = req.body;
+        const normalizedEmail = typeof email === 'string' ? email.trim().toLowerCase() : '';
 
-        if (!email) {
+        if (!normalizedEmail) {
             return res.status(400).json({
                 success: false,
                 message: 'Email is required'
             });
         }
 
-        const user = await userModel.findOne({ email });
+        const user = await userModel.findOne({ email: normalizedEmail });
 
         // Always return success to prevent user email enumeration.
         if (!user) {
